@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contributions Painter</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { margin: 0; padding: 0; }
+        .cell { width: 12px; height: 12px; }
+        .intensity-0 { background-color: #1f2937; }
+        .intensity-1 { background-color: #86efac; }
+        .intensity-2 { background-color: #4ade80; }
+        .intensity-3 { background-color: #22c55e; }
+        .intensity-4 { background-color: #16a34a; }
+        .intensity-0:hover { background-color: #374151; }
+        .intensity-1:hover { background-color: #bbf7d0; }
+        .intensity-2:hover { background-color: #22c55e; }
+        .intensity-3:hover { background-color: #16a34a; }
+        .intensity-4:hover { background-color: #15803d; }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 min-h-screen">
+    <div class="max-w-7xl mx-auto p-8">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <div class="flex items-center justify-center gap-3 mb-2">
+                <svg class="w-10 h-10 text-green-400" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                </svg>
+                <h1 class="text-4xl font-bold text-white">Contributions Painter</h1>
+            </div>
+            <p class="text-gray-400">Type text or draw patterns with 4 intensity levels</p>
+        </div>
+
+        <!-- Main Panel -->
+        <div class="bg-gray-800 rounded-lg p-6 mb-6 shadow-xl">
+            <!-- Text Input -->
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-300 mb-2 flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                    </svg>
+                    Type your text (auto-converts to pattern)
+                </label>
+                <input
+                    type="text"
+                    id="textInput"
+                    placeholder="e.g., hello world"
+                    class="w-full px-4 py-2 bg-gray-700 text-white rounded-lg focus:ring-2 focus:ring-green-500 focus:outline-none"
+                    maxlength="15"
+                />
+            </div>
+
+            <!-- Controls -->
+            <div class="flex items-center justify-between mb-4 flex-wrap gap-4">
+                <div class="flex items-center gap-3">
+                    <span class="text-sm text-gray-400">Intensity:</span>
+                    <button id="intensity1" class="w-8 h-8 rounded intensity-1 ring-2 ring-white transition"></button>
+                    <button id="intensity2" class="w-8 h-8 rounded intensity-2 transition"></button>
+                    <button id="intensity3" class="w-8 h-8 rounded intensity-3 transition"></button>
+                    <button id="intensity4" class="w-8 h-8 rounded intensity-4 transition"></button>
+                </div>
+                <div class="text-sm text-gray-400">
+                    <span class="font-semibold text-white" id="cellCount">0</span> cells • 
+                    <span class="ml-2 font-semibold text-white" id="commitCount">0</span> commits
+                </div>
+                <button id="clearBtn" class="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                    </svg>
+                    Clear
+                </button>
+            </div>
+
+            <!-- Grid -->
+            <div class="overflow-x-auto flex justify-center">
+                <div class="inline-block bg-gray-900 p-4 rounded-lg">
+                    <div id="grid" class="flex gap-1" style="user-select: none;"></div>
+                </div>
+            </div>
+
+            <div class="mt-4 text-xs text-gray-500 text-center">
+                7 rows (Sun-Sat) × 53 columns (weeks) • Left click to draw • Right click to erase
+            </div>
+        </div>
+
+        <!-- Export Buttons -->
+        <div class="grid md:grid-cols-2 gap-4 mb-8">
+            <button id="exportYAML" class="flex items-center justify-center gap-3 p-6 bg-green-600 hover:bg-green-700 text-white rounded-lg transition shadow-lg">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                </svg>
+                <div class="text-left">
+                    <div class="font-semibold">GitHub Action (YAML)</div>
+                    <div class="text-sm opacity-90">Automated workflow</div>
+                </div>
+            </button>
+
+            <button id="exportPython" class="flex items-center justify-center gap-3 p-6 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition shadow-lg">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                </svg>
+                <div class="text-left">
+                    <div class="font-semibold">Python Script</div>
+                    <div class="text-sm opacity-90">Run locally</div>
+                </div>
+            </button>
+        </div>
+
+        <!-- Instructions -->
+        <div class="grid md:grid-cols-2 gap-6 mb-8">
+            <!-- YAML Instructions -->
+            <div class="bg-gray-800 rounded-lg p-6 text-sm text-gray-300">
+                <h3 class="font-semibold text-green-400 text-lg mb-3 flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                    GitHub Action Setup
+                </h3>
+                <ol class="list-decimal list-inside space-y-2">
+                    <li>Click <strong class="text-white">"GitHub Action (YAML)"</strong> to download the workflow file</li>
+                    <li>Create a new repository or use an existing one</li>
+                    <li>In your repo, create the folder structure: <code class="bg-gray-700 px-2 py-1 rounded text-xs">.github/workflows/</code></li>
+                    <li>Place the downloaded <code class="bg-gray-700 px-2 py-1 rounded text-xs">contribution-pattern.yml</code> file in that folder</li>
+                    <li>Commit and push the file to your repository</li>
+                    <li>Go to the <strong class="text-white">Actions</strong> tab in your GitHub repo</li>
+                    <li>Select <strong class="text-white">"Draw Contribution Pattern"</strong> workflow</li>
+                    <li>Click <strong class="text-white">"Run workflow"</strong> button</li>
+                    <li>Wait a few minutes for commits to appear on your profile</li>
+                </ol>
+                <p class="mt-3 text-yellow-400 text-xs">⚠️ The workflow will create commits automatically!</p>
+            </div>
+
+            <!-- Python Instructions -->
+            <div class="bg-gray-800 rounded-lg p-6 text-sm text-gray-300">
+                <h3 class="font-semibold text-blue-400 text-lg mb-3 flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path>
+                    </svg>
+                    Python Script Setup
+                </h3>
+                <ol class="list-decimal list-inside space-y-2">
+                    <li>Click <strong class="text-white">"Python Script"</strong> to download the script</li>
+                    <li>Create a new repository or use an existing one</li>
+                    <li>Clone the repository to your local machine:
+                        <code class="block bg-gray-700 px-2 py-1 rounded text-xs mt-1">git clone https://github.com/username/repo.git</code>
+                    </li>
+                    <li>Navigate to the repository folder</li>
+                    <li>Place the downloaded <code class="bg-gray-700 px-2 py-1 rounded text-xs">create_pattern.py</code> file in the repo</li>
+                    <li>Make the script executable (Linux/Mac):
+                        <code class="block bg-gray-700 px-2 py-1 rounded text-xs mt-1">chmod +x create_pattern.py</code>
+                    </li>
+                    <li>Run the script:
+                        <code class="block bg-gray-700 px-2 py-1 rounded text-xs mt-1">python3 create_pattern.py</code>
+                    </li>
+                    <li>Push the changes:
+                        <code class="block bg-gray-700 px-2 py-1 rounded text-xs mt-1">git push origin main</code>
+                    </li>
+                </ol>
+                <p class="mt-3 text-yellow-400 text-xs">⚠️ Use a dedicated repo - this modifies commit history!</p>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="bg-gray-800 rounded-lg p-6 text-center">
+            <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+                <a href="https://github.com/Saganaki22/contributions-painter" target="_blank" 
+                   class="flex items-center gap-2 px-6 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition shadow-lg">
+                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                    </svg>
+                    View on GitHub
+                </a>
+                <a href="https://github.com/Saganaki22/contributions-painter" target="_blank"
+                   class="flex items-center gap-2 px-6 py-3 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg transition shadow-lg">
+                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 .587l3.668 7.568 8.332 1.151-6.064 5.828 1.48 8.279-7.416-3.967-7.417 3.967 1.481-8.279-6.064-5.828 8.332-1.151z"/>
+                    </svg>
+                    Star this repo
+                </a>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        const ROWS = 7;
+        const COLS = 53;
+        
+        const alphabet = {
+            'a': ['     ','11111','1   1','11111','1   1','1   1','     '],
+            'b': ['     ','1111 ','1   1','11111','1   1','1111 ','     '],
+            'c': ['     ','11111','1    ','1    ','1    ','11111','     '],
+            'd': ['     ','1111 ','1   1','1   1','1   1','1111 ','     '],
+            'e': ['     ','11111','1    ','11111','1    ','11111','     '],
+            'f': ['     ','11111','1    ','1111 ','1    ','1    ','     '],
+            'g': ['     ','11111','1    ','1 111','1   1','11111','     '],
+            'h': ['     ','1   1','1   1','11111','1   1','1   1','     '],
+            'i': ['     ','11111','  1  ','  1  ','  1  ','11111','     '],
+            'j': ['     ','1111','  1 ','  1 ','1 1 ','111 ','     '],
+            'k': ['     ','1  1','1 1 ','11  ','1 1 ','1  1','     '],
+            'l': ['     ','1    ','1    ','1    ','1    ','11111','     '],
+            'm': ['     ','1   1','11 11','1 1 1','1   1','1   1','     '],
+            'n': ['     ','1   1','11  1','1 1 1','1  11','1   1','     '],
+            'o': ['     ','11111','1   1','1   1','1   1','11111','     '],
+            'p': ['     ','11111','1   1','11111','1    ','1    ','     '],
+            'q': ['     ','11111','1   1','1   1','1  11','11111','     '],
+            'r': ['     ','11111','1   1','11111','1  1 ','1   1','     '],
+            's': ['     ','11111','1    ','11111','    1','11111','     '],
+            't': ['     ','11111','  1  ','  1  ','  1  ','  1  ','     '],
+            'u': ['     ','1   1','1   1','1   1','1   1','11111','     '],
+            'v': ['     ','1   1','1   1',' 1 1 ',' 1 1 ','  1  ','     '],
+            'w': ['     ','1   1','1   1','1   1','1 1 1','11 11','     '],
+            'x': ['     ','1   1',' 1 1 ','  1  ',' 1 1 ','1   1','     '],
+            'y': ['     ','1   1',' 1 1 ','  1  ','  1  ','  1  ','     '],
+            'z': ['     ','11111','   1 ','  1  ',' 1   ','11111','     '],
+            '0': ['     ',' 111 ','1   1','1   1','1   1',' 111 ','     '],
+            '1': ['  ','11',' 1',' 1',' 1',' 1','  '],
+            '2': ['     ',' 111 ','1   1','   1 ','  1  ','11111','     '],
+            '3': ['     ','11111','    1','  111','    1','11111','     '],
+            '4': ['     ','1   1','1   1','11111','    1','    1','     '],
+            '5': ['     ',' 1111','1    ','11111','    1','11111','     '],
+            '6': ['     ','11111','1    ','11111','1   1','11111','     '],
+            '7': ['     ','11111','    1','   1 ','  1  ','1    ','     '],
+            '8': ['     ','11111','1   1',' 111 ','1   1','11111','     '],
+            '9': ['     ','11111','1   1','11111','    1','11111','     '],
+            '-': ['     ','     ','     ',' 111 ','     ','     ','     '],
+            '_': ['     ','     ','     ','     ','     ','11111','     '],
+            '.': ['     ','     ','     ','     ','     ','  1  ','     '],
+            '/': ['     ','    1','   1 ','  1  ',' 1   ','1    ','     '],
+            '\\': ['     ','1    ',' 1   ','  1  ','   1 ','    1','     '],
+            ')': ['   ','1  ',' 1 ','  1',' 1 ','1  ','   '],
+            '(': ['   ','  1',' 1 ','1  ',' 1 ','  1','   '],
+            '[': ['    ',' 111',' 1  ',' 1  ',' 1  ',' 111','    '],
+            ']': ['    ','111 ','  1 ','  1 ','  1 ','111 ','    '],
+            ':': ['     ','     ','  1  ','     ','  1  ','     ','     '],
+            '*': ['     ','     ','1 1 1','  1  ','1 1 1','     ','     '],
+            '!': ['     ','  1  ','  1  ','  1  ','     ','  1  ','     '],
+            ' ': ['  ','  ','  ','  ','  ','  ','  ']
+        };
+
+        let grid = Array(ROWS).fill(null).map(() => Array(COLS).fill(0));
+        let isDrawing = false;
+        let currentIntensity = 1;
+
+        function initGrid() {
+            const gridEl = document.getElementById('grid');
+            gridEl.innerHTML = '';
+            
+            for (let col = 0; col < COLS; col++) {
+                const colDiv = document.createElement('div');
+                colDiv.className = 'flex flex-col gap-1';
+                
+                for (let row = 0; row < ROWS; row++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell rounded-sm cursor-pointer transition intensity-0';
+                    cell.dataset.row = row;
+                    cell.dataset.col = col;
+                    
+                    cell.addEventListener('mousedown', (e) => {
+                        e.preventDefault();
+                        isDrawing = true;
+                        
+                        if (e.button === 0) { // Left click
+                            setCell(row, col, currentIntensity);
+                        } else if (e.button === 2) { // Right click
+                            setCell(row, col, 0);
+                        }
+                    });
+                    
+                    cell.addEventListener('contextmenu', (e) => {
+                        e.preventDefault(); // Prevent right-click menu
+                        return false;
+                    });
+                    
+                    cell.addEventListener('mouseenter', (e) => {
+                        if (isDrawing) {
+                            if (e.buttons === 1) { // Left mouse button held
+                                setCell(row, col, currentIntensity);
+                            } else if (e.buttons === 2) { // Right mouse button held
+                                setCell(row, col, 0);
+                            }
+                        }
+                    });
+                    
+                    colDiv.appendChild(cell);
+                }
+                
+                gridEl.appendChild(colDiv);
+            }
+            
+            document.addEventListener('mouseup', () => {
+                isDrawing = false;
+            });
+        }
+
+        function setCell(row, col, intensity) {
+            grid[row][col] = intensity;
+            const cell = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
+            cell.className = `cell rounded-sm cursor-pointer transition intensity-${intensity}`;
+            updateStats();
+        }
+
+        function updateStats() {
+            const activeCells = grid.flat().filter(v => v > 0).length;
+            const totalCommits = grid.flat().reduce((sum, v) => sum + v, 0);
+            document.getElementById('cellCount').textContent = activeCells;
+            document.getElementById('commitCount').textContent = totalCommits;
+        }
+
+        function textToPattern(text) {
+            grid = Array(ROWS).fill(null).map(() => Array(COLS).fill(0));
+            
+            let col = 0;
+            for (let i = 0; i < text.length && col < COLS; i++) {
+                const char = text[i].toLowerCase();
+                const charPattern = alphabet[char];
+                
+                if (!charPattern) continue;
+                
+                const charWidth = charPattern[0].length;
+                if (col + charWidth > COLS) break;
+                
+                for (let row = 0; row < ROWS && row < charPattern.length; row++) {
+                    for (let c = 0; c < charWidth; c++) {
+                        if (charPattern[row][c] === '1') {
+                            grid[row][col + c] = currentIntensity;
+                        }
+                    }
+                }
+                
+                col += charWidth + 1;
+            }
+            
+            renderGrid();
+        }
+
+        function renderGrid() {
+            for (let row = 0; row < ROWS; row++) {
+                for (let col = 0; col < COLS; col++) {
+                    const cell = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
+                    cell.className = `cell rounded-sm cursor-pointer transition intensity-${grid[row][col]}`;
+                }
+            }
+            updateStats();
+        }
+
+        function clearGrid() {
+            grid = Array(ROWS).fill(null).map(() => Array(COLS).fill(0));
+            document.getElementById('textInput').value = '';
+            renderGrid();
+        }
+
+        function exportYAML() {
+            const yaml = `# GitHub Contribution Pattern
+# Paste this into .github/workflows/contribution-pattern.yml
+
+name: Draw Contribution Pattern
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 0 * * 0'  # Run weekly on Sunday
+
+jobs:
+  create-pattern:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+      
+      - name: Create Pattern Commits
+        run: |
+          # Pattern data (7 rows x 53 columns)
+          # 0 = no commit, 1-4 = commit intensity (1=light, 4=dark)
+          PATTERN='${JSON.stringify(grid)}'
+          
+          # Calculate start date (53 weeks ago from today, on a Sunday)
+          TODAY=$(date +%Y-%m-%d)
+          START_DATE=$(date -d "$TODAY -52 weeks -$(date -d $TODAY +%w) days" +%Y-%m-%d)
+          
+          # Create commits based on pattern
+          echo "$PATTERN" | python3 << 'EOF'
+import json
+import sys
+import os
+from datetime import datetime, timedelta
+
+pattern = json.loads(sys.stdin.read())
+start_date = datetime.strptime(os.environ['START_DATE'], '%Y-%m-%d')
+
+commit_count = 0
+for col in range(len(pattern[0])):
+    for row in range(len(pattern)):
+        intensity = pattern[row][col]
+        if intensity > 0:
+            commit_date = start_date + timedelta(weeks=col, days=row)
+            
+            # Create multiple commits for darker shades
+            for i in range(intensity):
+                date_string = commit_date.strftime('%Y-%m-%d') + f' {12 + i}:00:00'
+                
+                with open('contribution.txt', 'a') as f:
+                    f.write(f'Contribution on {date_string}\\n')
+                
+                os.system('git add contribution.txt')
+                os.system(f'git commit --date="{date_string}" -m "Pattern commit {commit_count}"')
+                commit_count += 1
+
+print(f'Created {commit_count} commits')
+EOF
+      
+      - name: Push changes
+        run: git push origin main
+        env:
+          GITHUB_TOKEN: \${{ secrets.GITHUB_TOKEN }}
+`;
+
+            download('contribution-pattern.yml', yaml);
+        }
+
+        function exportPython() {
+            const script = `#!/usr/bin/env python3
+import os
+from datetime import datetime, timedelta
+
+PATTERN = ${JSON.stringify(grid, null, 2)}
+
+def get_start_date():
+    today = datetime.now()
+    days_since_sunday = (today.weekday() + 1) % 7
+    last_sunday = today - timedelta(days=days_since_sunday)
+    start_date = last_sunday - timedelta(weeks=52)
+    return start_date
+
+def create_commits():
+    start_date = get_start_date()
+    commit_count = 0
+    
+    for col in range(len(PATTERN[0])):
+        for row in range(len(PATTERN)):
+            intensity = PATTERN[row][col]
+            if intensity > 0:
+                commit_date = start_date + timedelta(weeks=col, days=row)
+                
+                # Create multiple commits for darker shades
+                for i in range(intensity):
+                    date_string = commit_date.strftime("%Y-%m-%d") + f" {12 + i}:00:00"
+                    
+                    with open("contribution.txt", "a") as f:
+                        f.write(f"Contribution on {date_string}\\n")
+                    
+                    os.system("git add contribution.txt")
+                    os.system(f'git commit --date="{date_string}" -m "Pattern commit {commit_count}"')
+                    commit_count += 1
+                    print(f"Created commit for {date_string}")
+    
+    print(f"\\nTotal commits: {commit_count}")
+    print("Run: git push origin main")
+
+if __name__ == "__main__":
+    create_commits()
+`;
+
+            download('create_pattern.py', script);
+        }
+
+        function download(filename, content) {
+            const blob = new Blob([content], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // Event listeners
+        document.getElementById('textInput').addEventListener('input', (e) => {
+            textToPattern(e.target.value);
+        });
+
+        document.getElementById('clearBtn').addEventListener('click', clearGrid);
+        document.getElementById('exportYAML').addEventListener('click', exportYAML);
+        document.getElementById('exportPython').addEventListener('click', exportPython);
+
+        // Intensity buttons
+        for (let i = 1; i <= 4; i++) {
+            document.getElementById(`intensity${i}`).addEventListener('click', () => {
+                currentIntensity = i;
+                document.querySelectorAll('[id^="intensity"]').forEach(btn => {
+                    btn.classList.remove('ring-2', 'ring-white');
+                });
+                document.getElementById(`intensity${i}`).classList.add('ring-2', 'ring-white');
+            });
+        }
+
+        // Prevent context menu on the entire grid container
+        document.getElementById('grid').addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            return false;
+        });
+
+        // Initialize
+        initGrid();
+        updateStats();
+    </script>
+</body>
+</html>
