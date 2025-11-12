@@ -1,0 +1,65 @@
+# GitHub Contribution Pattern
+# Paste this into .github/workflows/contribution-pattern.yml
+
+name: Draw Contribution Pattern
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 0 * * 0'  # Run weekly on Sunday
+
+jobs:
+  create-pattern:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+      
+      - name: Create Pattern Commits
+        run: |
+          # Pattern data (7 rows x 53 columns)
+          # 0 = no commit, 1-4 = commit intensity (1=light, 4=dark)
+          PATTERN='[[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[3,3,3,3,3,0,3,3,3,3,3,0,3,3,3,3,3,0,3,3,3,3,3,0,3,0,0,0,3,0,3,3,3,3,3,0,3,0,0,3,0,3,3,3,3,3,0,0,3,3,3,0,0],[3,0,0,0,0,0,3,0,0,0,3,0,3,0,0,0,0,0,3,0,0,0,3,0,3,3,0,0,3,0,3,0,0,0,3,0,3,0,3,0,0,0,0,3,0,0,0,3,0,0,0,3,0],[3,3,3,3,3,0,3,3,3,3,3,0,3,0,3,3,3,0,3,3,3,3,3,0,3,0,3,0,3,0,3,3,3,3,3,0,3,3,0,0,0,0,0,3,0,0,0,0,0,0,3,0,0],[0,0,0,0,3,0,3,0,0,0,3,0,3,0,0,0,3,0,3,0,0,0,3,0,3,0,0,3,3,0,3,0,0,0,3,0,3,0,3,0,0,0,0,3,0,0,0,0,0,3,0,0,0],[3,3,3,3,3,0,3,0,0,0,3,0,3,3,3,3,3,0,3,0,0,0,3,0,3,0,0,0,3,0,3,0,0,0,3,0,3,0,0,3,0,3,3,3,3,3,0,3,3,3,3,3,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]]'
+          
+          # Calculate start date (53 weeks ago from today, on a Sunday)
+          TODAY=$(date +%Y-%m-%d)
+          START_DATE=$(date -d "$TODAY -52 weeks -$(date -d $TODAY +%w) days" +%Y-%m-%d)
+          
+          # Create commits based on pattern
+          echo "$PATTERN" | python3 << 'EOF'
+import json
+import sys
+import os
+from datetime import datetime, timedelta
+
+pattern = json.loads(sys.stdin.read())
+start_date = datetime.strptime(os.environ['START_DATE'], '%Y-%m-%d')
+
+commit_count = 0
+for col in range(len(pattern[0])):
+    for row in range(len(pattern)):
+        intensity = pattern[row][col]
+        if intensity > 0:
+            commit_date = start_date + timedelta(weeks=col, days=row)
+            
+            # Create multiple commits for darker shades
+            for i in range(intensity):
+                date_string = commit_date.strftime('%Y-%m-%d') + f' {12 + i}:00:00'
+                
+                with open('contribution.txt', 'a') as f:
+                    f.write(f'Contribution on {date_string}\n')
+                
+                os.system('git add contribution.txt')
+                os.system(f'git commit --date="{date_string}" -m "Pattern commit {commit_count}"')
+                commit_count += 1
+
+print(f'Created {commit_count} commits')
+EOF
+      
+      - name: Push changes
+        run: git push origin main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
