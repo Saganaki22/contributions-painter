@@ -181,5 +181,3 @@ If you find this tool useful, please consider giving it a star on GitHub!
 - **Live Demo**: [https://drbaph.is.a.dev/contributions-painter](https://drbaph.is.a.dev/contributions-painter)
 
 ---
-
-**Made for the GitHub community** 🎨
