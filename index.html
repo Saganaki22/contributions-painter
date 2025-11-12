@@ -18,6 +18,25 @@
         .intensity-2:hover { background-color: #22c55e; }
         .intensity-3:hover { background-color: #16a34a; }
         .intensity-4:hover { background-color: #15803d; }
+        /* Toast notification styles */
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            padding: 12px 20px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 500;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+        }
+        .toast.show {
+            transform: translateX(0);
+        }
+        .toast.success { background-color: #10b981; }
+        .toast.error { background-color: #ef4444; }
     </style>
 </head>
 <body class="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 min-h-screen">
@@ -85,8 +104,8 @@
             </div>
         </div>
 
-        <!-- Export Buttons -->
-        <div class="grid md:grid-cols-2 gap-4 mb-8">
+        <!-- Export & Import Buttons -->
+        <div class="grid md:grid-cols-3 gap-4 mb-8">
             <button id="exportYAML" class="flex items-center justify-center gap-3 p-6 bg-green-600 hover:bg-green-700 text-white rounded-lg transition shadow-lg">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
@@ -104,6 +123,17 @@
                 <div class="text-left">
                     <div class="font-semibold">Python Script</div>
                     <div class="text-sm opacity-90">Run locally</div>
+                </div>
+            </button>
+
+            <!-- New Load Pattern Button -->
+            <button id="loadPatternBtn" class="flex items-center justify-center gap-3 p-6 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition shadow-lg">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 11115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"></path>
+                </svg>
+                <div class="text-left">
+                    <div class="font-semibold">Load Pattern</div>
+                    <div class="text-sm opacity-90">From .py or .yml</div>
                 </div>
             </button>
         </div>
@@ -183,6 +213,9 @@
 
         </div>
     </div>
+
+    <!-- Hidden file input -->
+    <input type="file" id="fileInput" accept=".py,.yml,.yaml" style="display: none;">
 
     <script>
         const ROWS = 7;
@@ -352,7 +385,171 @@
             renderGrid();
         }
 
+        // Toast notification system
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            // Trigger animation
+            setTimeout(() => toast.classList.add('show'), 10);
+            
+            // Remove after 3 seconds
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // File parsing functions
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const content = e.target.result;
+                let pattern = null;
+
+                try {
+                    if (file.name.endsWith('.py')) {
+                        pattern = parsePythonFile(content);
+                        showToast(`${file.name} loaded successfully`, 'success');
+                    } else if (file.name.endsWith('.yml') || file.name.endsWith('.yaml')) {
+                        pattern = parseYAMLFile(content);
+                        showToast(`${file.name} loaded successfully`, 'success');
+                    } else {
+                        showToast('Unsupported file type', 'error');
+                    }
+
+                    if (pattern) {
+                        loadPatternIntoGrid(pattern);
+                    } else if (!file.name.endsWith('.py') && !file.name.endsWith('.yml') && !file.name.endsWith('.yaml')) {
+                        // Already handled above
+                    } else {
+                        showToast('Failed to parse pattern from file', 'error');
+                    }
+                } catch (error) {
+                    console.error('File parsing error:', error);
+                    showToast(`Error: ${error.message}`, 'error');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function parsePythonFile(content) {
+            // Find PATTERN = and capture until a blank line (two newlines)
+            const patternStart = content.indexOf('PATTERN =');
+            if (patternStart === -1) {
+                throw new Error('Could not find PATTERN variable in file');
+            }
+            
+            // Get substring from PATTERN = to the end
+            const afterPattern = content.substring(patternStart + 9); // +9 for "PATTERN ="
+            
+            // Find the first blank line (two newlines with optional whitespace in between)
+            const blankLineIndex = afterPattern.search(/\n\s*\n/);
+            if (blankLineIndex === -1) {
+                throw new Error('Could not find end of PATTERN variable');
+            }
+            
+            // Extract the pattern text
+            const patternText = afterPattern.substring(0, blankLineIndex).trim();
+            
+            try {
+                // Replace single quotes with double quotes for valid JSON
+                const jsonStr = patternText.replace(/'/g, '"');
+                return JSON.parse(jsonStr);
+            } catch (e) {
+                console.error('JSON parse error:', e);
+                throw new Error('Invalid pattern format in Python file');
+            }
+        }
+
+        function parseYAMLFile(content) {
+            // Find the python3 heredoc block
+            // Match python3 << 'MARKER' ... MARKER (with proper indentation)
+            const heredocRegex = /python3\s*<<\s*['"]([^'"]+)['"]([\s\S]*?)\s*\1/;
+            const match = content.match(heredocRegex);
+            if (match) {
+                const pythonCode = match[2];
+                // Remove YAML indentation (first 10 spaces) from each line
+                const unindentedCode = pythonCode.split('\n').map(line => 
+                    line.startsWith('          ') ? line.substring(10) : line
+                ).join('\n');
+                return parsePythonFile(unindentedCode);
+            }
+            throw new Error('Could not find Python code block in YAML file');
+        }
+
+        function loadPatternIntoGrid(pattern) {
+            // Validate pattern dimensions
+            if (!Array.isArray(pattern) || pattern.length !== ROWS) {
+                throw new Error(`Invalid pattern: expected ${ROWS} rows, got ${pattern ? pattern.length : 'invalid'}`);
+            }
+            if (!Array.isArray(pattern[0]) || pattern[0].length !== COLS) {
+                throw new Error(`Invalid pattern: expected ${COLS} columns, got ${pattern[0] ? pattern[0].length : 'invalid'}`);
+            }
+
+            // Validate intensity values
+            for (let row = 0; row < ROWS; row++) {
+                for (let col = 0; col < COLS; col++) {
+                    const val = pattern[row][col];
+                    if (typeof val !== 'number' || val < 0 || val > 4) {
+                        throw new Error(`Invalid intensity value at [${row}][${col}]: ${val}`);
+                    }
+                }
+            }
+
+            grid = pattern;
+            renderGrid();
+        }
+
         function exportYAML() {
+            // Create Python code with embedded pattern
+            const pythonCode = [
+                "import json",
+                "import os",
+                "from datetime import datetime, timedelta",
+                "",
+                "# Pattern data (7 rows x 53 columns)",
+                "# 0 = no commit, 1-4 = commit intensity (1=light, 4=dark)",
+                `PATTERN = ${JSON.stringify(grid)}`,
+                "",
+                "# Calculate start date (53 weeks ago from today, on a Sunday)",
+                "today = datetime.now()",
+                "days_since_sunday = (today.weekday() + 1) % 7",
+                "last_sunday = today - timedelta(days=days_since_sunday)",
+                "start_date = last_sunday - timedelta(weeks=52)",
+                "",
+                "commit_count = 0",
+                "for col in range(len(PATTERN[0])):",
+                "    for row in range(len(PATTERN)):",
+                "        intensity = PATTERN[row][col]",
+                "        if intensity > 0:",
+                "            commit_date = start_date + timedelta(weeks=col, days=row)",
+                "            ",
+                "            # Create multiple commits for darker shades",
+                "            for i in range(intensity):",
+                "                date_string = commit_date.strftime('%Y-%m-%d') + f' {12 + i}:00:00'",
+                "                ",
+                "                with open('contribution.txt', 'a') as f:",
+                "                    f.write(f'Contribution on {date_string}\\n')",
+                "                ",
+                "                os.system('git add contribution.txt')",
+                "                os.system(f'git commit --date=\"{date_string}\" -m \"Pattern commit {commit_count}\"')",
+                "                commit_count += 1",
+                "",
+                "if commit_count > 0:",
+                "    print(f'Created {commit_count} commits')",
+                "else:",
+                "    print('No commits to create. Pattern is empty.')"
+            ].join('\n');
+
+            // Indent Python code for YAML (using 2 spaces for Python indentation, plus 10 spaces for YAML)
+            const indentedPython = pythonCode.split('\n').map(line => '          ' + line).join('\n');
+
             const yaml = `# GitHub Contribution Pattern
 # Paste this into .github/workflows/contribution-pattern.yml
 
@@ -375,44 +572,9 @@ jobs:
       
       - name: Create Pattern Commits
         run: |
-          # Pattern data (7 rows x 53 columns)
-          # 0 = no commit, 1-4 = commit intensity (1=light, 4=dark)
-          PATTERN='${JSON.stringify(grid)}'
-          
-          # Calculate start date (53 weeks ago from today, on a Sunday)
-          TODAY=$(date +%Y-%m-%d)
-          START_DATE=$(date -d "$TODAY -52 weeks -$(date -d $TODAY +%w) days" +%Y-%m-%d)
-          
-          # Create commits based on pattern
-          echo "$PATTERN" | python3 << 'EOF'
-import json
-import sys
-import os
-from datetime import datetime, timedelta
-
-pattern = json.loads(sys.stdin.read())
-start_date = datetime.strptime(os.environ['START_DATE'], '%Y-%m-%d')
-
-commit_count = 0
-for col in range(len(pattern[0])):
-    for row in range(len(pattern)):
-        intensity = pattern[row][col]
-        if intensity > 0:
-            commit_date = start_date + timedelta(weeks=col, days=row)
-            
-            # Create multiple commits for darker shades
-            for i in range(intensity):
-                date_string = commit_date.strftime('%Y-%m-%d') + f' {12 + i}:00:00'
-                
-                with open('contribution.txt', 'a') as f:
-                    f.write(f'Contribution on {date_string}\\n')
-                
-                os.system('git add contribution.txt')
-                os.system(f'git commit --date="{date_string}" -m "Pattern commit {commit_count}"')
-                commit_count += 1
-
-print(f'Created {commit_count} commits')
-EOF
+          python3 << 'PYEOF'
+${indentedPython}
+          PYEOF
       
       - name: Push changes
         run: git push origin main
@@ -457,10 +619,12 @@ def create_commits():
                     os.system("git add contribution.txt")
                     os.system(f'git commit --date="{date_string}" -m "Pattern commit {commit_count}"')
                     commit_count += 1
-                    print(f"Created commit for {date_string}")
     
-    print(f"\\nTotal commits: {commit_count}")
-    print("Run: git push origin main")
+    if commit_count > 0:
+        print(f"\\nTotal commits: {commit_count}")
+        print("Run: git push origin main")
+    else:
+        print("\\nNo commits to create. Pattern is empty.")
 
 if __name__ == "__main__":
     create_commits()
@@ -487,6 +651,13 @@ if __name__ == "__main__":
         document.getElementById('clearBtn').addEventListener('click', clearGrid);
         document.getElementById('exportYAML').addEventListener('click', exportYAML);
         document.getElementById('exportPython').addEventListener('click', exportPython);
+        
+        // File upload listeners
+        const fileInput = document.getElementById('fileInput');
+        document.getElementById('loadPatternBtn').addEventListener('click', () => {
+            fileInput.click();
+        });
+        fileInput.addEventListener('change', handleFileUpload);
 
         // Intensity buttons
         for (let i = 1; i <= 4; i++) {
