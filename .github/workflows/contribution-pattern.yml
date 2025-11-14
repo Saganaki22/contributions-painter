@@ -47,8 +47,11 @@ jobs:
                       num_commits = COMMIT_COUNTS[intensity]
                       
                       # Create commits based on intensity level
+                      # Spread commits throughout the day using minutes
                       for i in range(num_commits):
-                          date_string = commit_date.strftime('%Y-%m-%d') + f' {12 + i}:00:00'
+                          hour = (i // 60) % 24
+                          minute = i % 60
+                          date_string = commit_date.strftime('%Y-%m-%d') + f' {hour:02d}:{minute:02d}:00'
                           
                           with open('contribution.txt', 'a') as f:
                               f.write(f'Contribution on {date_string}\n')
