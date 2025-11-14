@@ -26,8 +26,11 @@ jobs:
           from datetime import datetime, timedelta
           
           # Pattern data (7 rows x 53 columns)
-          # 0 = no commit, 1-4 = commit intensity (1=light, 4=dark)
+          # 0 = no commit, 1=LIGHTEST (38 commits), 2=light (25 commits), 3=dark (15 commits), 4=DARKEST (1 commit)
           PATTERN = [[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,0,1,0,0,0,1,0,1,1,1,1,1,0,1,0,0,1,0,1,1,1,1,1,0,0,1,1,1,0,0],[1,0,0,0,0,0,1,0,0,0,1,0,1,0,0,0,0,0,1,0,0,0,1,0,1,1,0,0,1,0,1,0,0,0,1,0,1,0,1,0,0,0,0,1,0,0,0,1,0,0,0,1,0],[1,1,1,1,1,0,1,1,1,1,1,0,1,0,1,1,1,0,1,1,1,1,1,0,1,0,1,0,1,0,1,1,1,1,1,0,1,1,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0],[0,0,0,0,1,0,1,0,0,0,1,0,1,0,0,0,1,0,1,0,0,0,1,0,1,0,0,1,1,0,1,0,0,0,1,0,1,0,1,0,0,0,0,1,0,0,0,0,0,1,0,0,0],[1,1,1,1,1,0,1,0,0,0,1,0,1,1,1,1,1,0,1,0,0,0,1,0,1,0,0,0,1,0,1,0,0,0,1,0,1,0,0,1,0,1,1,1,1,1,0,1,1,1,1,1,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]]
+          
+          # Commit counts for each intensity level
+          COMMIT_COUNTS = {0: 0, 1: 38, 2: 25, 3: 15, 4: 1}
           
           # Calculate start date (53 weeks ago from today, on a Sunday)
           today = datetime.now()
@@ -41,9 +44,10 @@ jobs:
                   intensity = PATTERN[row][col]
                   if intensity > 0:
                       commit_date = start_date + timedelta(weeks=col, days=row)
+                      num_commits = COMMIT_COUNTS[intensity]
                       
-                      # Create multiple commits for darker shades
-                      for i in range(intensity):
+                      # Create commits based on intensity level
+                      for i in range(num_commits):
                           date_string = commit_date.strftime('%Y-%m-%d') + f' {12 + i}:00:00'
                           
                           with open('contribution.txt', 'a') as f:
