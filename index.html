@@ -18,7 +18,6 @@
         .intensity-2:hover { background-color: #22c55e; }
         .intensity-3:hover { background-color: #16a34a; }
         .intensity-4:hover { background-color: #15803d; }
-        /* Toast notification styles */
         .toast {
             position: fixed;
             top: 20px;
@@ -32,11 +31,23 @@
             transform: translateX(400px);
             transition: transform 0.3s ease;
         }
-        .toast.show {
-            transform: translateX(0);
-        }
+        .toast.show { transform: translateX(0); }
         .toast.success { background-color: #10b981; }
         .toast.error { background-color: #ef4444; }
+        .commit-input {
+            width: 50px;
+            background-color: #374151;
+            color: white;
+            border: 1px solid #4b5563;
+            border-radius: 4px;
+            padding: 2px 6px;
+            text-align: center;
+            font-size: 14px;
+        }
+        .commit-input:focus {
+            outline: none;
+            border-color: #10b981;
+        }
     </style>
 </head>
 <body class="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 min-h-screen">
@@ -49,7 +60,32 @@
                 </svg>
                 <h1 class="text-4xl font-bold text-white">Contributions Painter</h1>
             </div>
-            <p class="text-gray-400">Type text or draw patterns with 4 intensity levels</p>
+            <!-- Editable Commit Settings -->
+            <div class="flex items-center justify-center gap-4 text-gray-300 text-sm flex-wrap">
+                <div class="flex items-center gap-2">
+                    <span>Lightest=</span>
+                    <input type="number" id="commits1" class="commit-input" value="100" min="1" max="200">
+                    <span>commits</span>
+                </div>
+                <span>•</span>
+                <div class="flex items-center gap-2">
+                    <span>Light=</span>
+                    <input type="number" id="commits2" class="commit-input" value="50" min="1" max="200">
+                </div>
+                <span>•</span>
+                <div class="flex items-center gap-2">
+                    <span>Dark=</span>
+                    <input type="number" id="commits3" class="commit-input" value="20" min="1" max="200">
+                </div>
+                <span>•</span>
+                <div class="flex items-center gap-2">
+                    <span>Darkest=</span>
+                    <input type="number" id="commits4" class="commit-input" value="5" min="1" max="200">
+                </div>
+                <button id="resetCommits" class="ml-2 px-3 py-1 bg-gray-700 hover:bg-gray-600 text-white rounded text-xs transition">
+                    Reset
+                </button>
+            </div>
         </div>
 
         <!-- Main Panel -->
@@ -75,10 +111,10 @@
             <div class="flex items-center justify-between mb-4 flex-wrap gap-4">
                 <div class="flex items-center gap-3">
                     <span class="text-sm text-gray-400">Intensity:</span>
-                    <button id="intensity1" class="w-8 h-8 rounded intensity-1 ring-2 ring-white transition"></button>
-                    <button id="intensity2" class="w-8 h-8 rounded intensity-2 transition"></button>
-                    <button id="intensity3" class="w-8 h-8 rounded intensity-3 transition"></button>
-                    <button id="intensity4" class="w-8 h-8 rounded intensity-4 transition"></button>
+                    <button id="intensity1" class="w-8 h-8 rounded intensity-1 ring-2 ring-white transition" title="Lightest"></button>
+                    <button id="intensity2" class="w-8 h-8 rounded intensity-2 transition" title="Light"></button>
+                    <button id="intensity3" class="w-8 h-8 rounded intensity-3 transition" title="Dark"></button>
+                    <button id="intensity4" class="w-8 h-8 rounded intensity-4 transition" title="Darkest"></button>
                 </div>
                 <div class="text-sm text-gray-400">
                     <span class="font-semibold text-white" id="cellCount">0</span> cells • 
@@ -126,10 +162,9 @@
                 </div>
             </button>
 
-            <!-- New Load Pattern Button -->
             <button id="loadPatternBtn" class="flex items-center justify-center gap-3 p-6 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition shadow-lg">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 11115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"></path>
                 </svg>
                 <div class="text-left">
                     <div class="font-semibold">Load Pattern</div>
@@ -210,16 +245,17 @@
                     Star this repo
                 </a>
             </div>
-
         </div>
     </div>
 
-    <!-- Hidden file input -->
     <input type="file" id="fileInput" accept=".py,.yml,.yaml" style="display: none;">
 
     <script>
         const ROWS = 7;
         const COLS = 53;
+        
+        const DEFAULT_COMMITS = {1: 100, 2: 50, 3: 20, 4: 5};
+        let COMMIT_COUNTS = {...DEFAULT_COMMITS};
         
         const alphabet = {
             'a': ['     ','11111','1   1','11111','1   1','1   1','     '],
@@ -277,6 +313,17 @@
         let isDrawing = false;
         let currentIntensity = 1;
 
+        function getCommitCounts() {
+            COMMIT_COUNTS = {
+                0: 0,
+                1: parseInt(document.getElementById('commits1').value) || 38,
+                2: parseInt(document.getElementById('commits2').value) || 25,
+                3: parseInt(document.getElementById('commits3').value) || 15,
+                4: parseInt(document.getElementById('commits4').value) || 1
+            };
+            return COMMIT_COUNTS;
+        }
+
         function initGrid() {
             const gridEl = document.getElementById('grid');
             gridEl.innerHTML = '';
@@ -295,23 +342,23 @@
                         e.preventDefault();
                         isDrawing = true;
                         
-                        if (e.button === 0) { // Left click
+                        if (e.button === 0) {
                             setCell(row, col, currentIntensity);
-                        } else if (e.button === 2) { // Right click
+                        } else if (e.button === 2) {
                             setCell(row, col, 0);
                         }
                     });
                     
                     cell.addEventListener('contextmenu', (e) => {
-                        e.preventDefault(); // Prevent right-click menu
+                        e.preventDefault();
                         return false;
                     });
                     
                     cell.addEventListener('mouseenter', (e) => {
                         if (isDrawing) {
-                            if (e.buttons === 1) { // Left mouse button held
+                            if (e.buttons === 1) {
                                 setCell(row, col, currentIntensity);
-                            } else if (e.buttons === 2) { // Right mouse button held
+                            } else if (e.buttons === 2) {
                                 setCell(row, col, 0);
                             }
                         }
@@ -336,8 +383,9 @@
         }
 
         function updateStats() {
+            getCommitCounts();
             const activeCells = grid.flat().filter(v => v > 0).length;
-            const totalCommits = grid.flat().reduce((sum, v) => sum + v, 0);
+            const totalCommits = grid.flat().reduce((sum, v) => sum + COMMIT_COUNTS[v], 0);
             document.getElementById('cellCount').textContent = activeCells;
             document.getElementById('commitCount').textContent = totalCommits;
         }
@@ -385,24 +433,20 @@
             renderGrid();
         }
 
-        // Toast notification system
         function showToast(message, type = 'success') {
             const toast = document.createElement('div');
             toast.className = `toast ${type}`;
             toast.textContent = message;
             document.body.appendChild(toast);
             
-            // Trigger animation
             setTimeout(() => toast.classList.add('show'), 10);
             
-            // Remove after 3 seconds
             setTimeout(() => {
                 toast.classList.remove('show');
                 setTimeout(() => toast.remove(), 300);
             }, 3000);
         }
 
-        // File parsing functions
         function handleFileUpload(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -426,7 +470,7 @@
                     if (pattern) {
                         loadPatternIntoGrid(pattern);
                     } else if (!file.name.endsWith('.py') && !file.name.endsWith('.yml') && !file.name.endsWith('.yaml')) {
-                        // Already handled above
+                        // Already handled
                     } else {
                         showToast('Failed to parse pattern from file', 'error');
                     }
@@ -439,26 +483,20 @@
         }
 
         function parsePythonFile(content) {
-            // Find PATTERN = and capture until a blank line (two newlines)
             const patternStart = content.indexOf('PATTERN =');
             if (patternStart === -1) {
                 throw new Error('Could not find PATTERN variable in file');
             }
             
-            // Get substring from PATTERN = to the end
-            const afterPattern = content.substring(patternStart + 9); // +9 for "PATTERN ="
-            
-            // Find the first blank line (two newlines with optional whitespace in between)
+            const afterPattern = content.substring(patternStart + 9);
             const blankLineIndex = afterPattern.search(/\n\s*\n/);
             if (blankLineIndex === -1) {
                 throw new Error('Could not find end of PATTERN variable');
             }
             
-            // Extract the pattern text
             const patternText = afterPattern.substring(0, blankLineIndex).trim();
             
             try {
-                // Replace single quotes with double quotes for valid JSON
                 const jsonStr = patternText.replace(/'/g, '"');
                 return JSON.parse(jsonStr);
             } catch (e) {
@@ -468,13 +506,10 @@
         }
 
         function parseYAMLFile(content) {
-            // Find the python3 heredoc block
-            // Match python3 << 'MARKER' ... MARKER (with proper indentation)
             const heredocRegex = /python3\s*<<\s*['"]([^'"]+)['"]([\s\S]*?)\s*\1/;
             const match = content.match(heredocRegex);
             if (match) {
                 const pythonCode = match[2];
-                // Remove YAML indentation (first 10 spaces) from each line
                 const unindentedCode = pythonCode.split('\n').map(line => 
                     line.startsWith('          ') ? line.substring(10) : line
                 ).join('\n');
@@ -484,7 +519,6 @@
         }
 
         function loadPatternIntoGrid(pattern) {
-            // Validate pattern dimensions
             if (!Array.isArray(pattern) || pattern.length !== ROWS) {
                 throw new Error(`Invalid pattern: expected ${ROWS} rows, got ${pattern ? pattern.length : 'invalid'}`);
             }
@@ -492,7 +526,6 @@
                 throw new Error(`Invalid pattern: expected ${COLS} columns, got ${pattern[0] ? pattern[0].length : 'invalid'}`);
             }
 
-            // Validate intensity values
             for (let row = 0; row < ROWS; row++) {
                 for (let col = 0; col < COLS; col++) {
                     const val = pattern[row][col];
@@ -507,15 +540,18 @@
         }
 
         function exportYAML() {
-            // Create Python code with embedded pattern
+            getCommitCounts();
             const pythonCode = [
                 "import json",
                 "import os",
                 "from datetime import datetime, timedelta",
                 "",
                 "# Pattern data (7 rows x 53 columns)",
-                "# 0 = no commit, 1-4 = commit intensity (1=light, 4=dark)",
+                `# 0 = no commit, 1=LIGHTEST (${COMMIT_COUNTS[1]} commits), 2=light (${COMMIT_COUNTS[2]} commits), 3=dark (${COMMIT_COUNTS[3]} commits), 4=DARKEST (${COMMIT_COUNTS[4]} commit)`,
                 `PATTERN = ${JSON.stringify(grid)}`,
+                "",
+                "# Commit counts for each intensity level",
+                `COMMIT_COUNTS = {0: 0, 1: ${COMMIT_COUNTS[1]}, 2: ${COMMIT_COUNTS[2]}, 3: ${COMMIT_COUNTS[3]}, 4: ${COMMIT_COUNTS[4]}}`,
                 "",
                 "# Calculate start date (53 weeks ago from today, on a Sunday)",
                 "today = datetime.now()",
@@ -529,10 +565,14 @@
                 "        intensity = PATTERN[row][col]",
                 "        if intensity > 0:",
                 "            commit_date = start_date + timedelta(weeks=col, days=row)",
+                "            num_commits = COMMIT_COUNTS[intensity]",
                 "            ",
-                "            # Create multiple commits for darker shades",
-                "            for i in range(intensity):",
-                "                date_string = commit_date.strftime('%Y-%m-%d') + f' {12 + i}:00:00'",
+                "            # Create commits based on intensity level",
+                "            # Spread commits throughout the day using minutes",
+                "            for i in range(num_commits):",
+                "                hour = (i // 60) % 24",
+                "                minute = i % 60",
+                "                date_string = commit_date.strftime('%Y-%m-%d') + f' {hour:02d}:{minute:02d}:00'",
                 "                ",
                 "                with open('contribution.txt', 'a') as f:",
                 "                    f.write(f'Contribution on {date_string}\\n')",
@@ -547,7 +587,6 @@
                 "    print('No commits to create. Pattern is empty.')"
             ].join('\n');
 
-            // Indent Python code for YAML (using 2 spaces for Python indentation, plus 10 spaces for YAML)
             const indentedPython = pythonCode.split('\n').map(line => '          ' + line).join('\n');
 
             const yaml = `# GitHub Contribution Pattern
@@ -586,11 +625,16 @@ ${indentedPython}
         }
 
         function exportPython() {
+            getCommitCounts();
             const script = `#!/usr/bin/env python3
 import os
 from datetime import datetime, timedelta
 
 PATTERN = ${JSON.stringify(grid, null, 2)}
+
+# Commit counts for each intensity level
+# 0 = no commit, 1=LIGHTEST (${COMMIT_COUNTS[1]} commits), 2=light (${COMMIT_COUNTS[2]} commits), 3=dark (${COMMIT_COUNTS[3]} commits), 4=DARKEST (${COMMIT_COUNTS[4]} commit)
+COMMIT_COUNTS = {0: 0, 1: ${COMMIT_COUNTS[1]}, 2: ${COMMIT_COUNTS[2]}, 3: ${COMMIT_COUNTS[3]}, 4: ${COMMIT_COUNTS[4]}}
 
 def get_start_date():
     today = datetime.now()
@@ -608,10 +652,14 @@ def create_commits():
             intensity = PATTERN[row][col]
             if intensity > 0:
                 commit_date = start_date + timedelta(weeks=col, days=row)
+                num_commits = COMMIT_COUNTS[intensity]
                 
-                # Create multiple commits for darker shades
-                for i in range(intensity):
-                    date_string = commit_date.strftime("%Y-%m-%d") + f" {12 + i}:00:00"
+                # Create commits based on intensity level
+                # Spread commits throughout the day using minutes
+                for i in range(num_commits):
+                    hour = (i // 60) % 24
+                    minute = i % 60
+                    date_string = commit_date.strftime("%Y-%m-%d") + f" {hour:02d}:{minute:02d}:00"
                     
                     with open("contribution.txt", "a") as f:
                         f.write(f"Contribution on {date_string}\\n")
@@ -652,7 +700,6 @@ if __name__ == "__main__":
         document.getElementById('exportYAML').addEventListener('click', exportYAML);
         document.getElementById('exportPython').addEventListener('click', exportPython);
         
-        // File upload listeners
         const fileInput = document.getElementById('fileInput');
         document.getElementById('loadPatternBtn').addEventListener('click', () => {
             fileInput.click();
@@ -670,7 +717,21 @@ if __name__ == "__main__":
             });
         }
 
-        // Prevent context menu on the entire grid container
+        // Commit count inputs
+        for (let i = 1; i <= 4; i++) {
+            document.getElementById(`commits${i}`).addEventListener('input', updateStats);
+        }
+
+        // Reset button
+        document.getElementById('resetCommits').addEventListener('click', () => {
+            document.getElementById('commits1').value = DEFAULT_COMMITS[1];
+            document.getElementById('commits2').value = DEFAULT_COMMITS[2];
+            document.getElementById('commits3').value = DEFAULT_COMMITS[3];
+            document.getElementById('commits4').value = DEFAULT_COMMITS[4];
+            updateStats();
+            showToast('Commit counts reset to defaults', 'success');
+        });
+
         document.getElementById('grid').addEventListener('contextmenu', (e) => {
             e.preventDefault();
             return false;
